@@ -2,8 +2,9 @@ import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import Todo from './models/Todo';
 import { ObjectID } from 'bson';
+import { environment } from './config/environment';
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || environment.PORT;
 
 export const app = express();
 
@@ -64,6 +65,32 @@ app.delete('/todo/:id', (req, res) => {
                 res.status(404).send();
             }
 
+            res.send({ todo });
+        })
+        .catch(_ => {
+            res.status(400).send();
+        });
+});
+
+app.patch('/todo/:id', (req, res) => {
+    const id = req.params.id;
+
+    if (!ObjectID.isValid(id)) {
+        res.status(404).send();
+    }
+
+    let { text, completed } = req.body;
+    let completedAt;
+
+    if (typeof (completed) === 'boolean' && completed) {
+        completedAt = new Date().getTime();
+    } else {
+        completed = false;
+        completedAt = null;
+    }
+
+    Todo.findByIdAndUpdate(id, { $set: { text, completed, completedAt } }, { new: true })
+        .then(todo => {
             res.send({ todo });
         })
         .catch(_ => {
